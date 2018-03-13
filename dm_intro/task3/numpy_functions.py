@@ -1,3 +1,4 @@
+from numpy.linalg import norm
 import numpy as np
 
 
@@ -38,7 +39,7 @@ def matrix_rowmean(X, weights=np.empty(0)):
 
 
 def cosine_row_similarity(row, X):
-    return np.dot(X, row) / (np.linalg.norm(row) * np.apply_along_axis(np.linalg.norm, 1, X))
+    return np.dot(X, row) / (norm(row) * np.apply_along_axis(norm, 1, X))
 
 
 def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
@@ -79,3 +80,18 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
     out = np.apply_along_axis(cosine_row_similarity, 1, X, X)
 
     return out
+
+a = np.array([[1, 2, 11], [4, 3, 12]])
+b = np.array([[5, 6], [7, 8], [9, 10]])
+print(matrix_multiply(a, b))
+print()
+
+a = np.array([[1, 2, 3]])
+weights = np.array([0, 1, 2])
+print(matrix_rowmean(a, weights))
+print(matrix_rowmean(a))
+print()
+
+a = np.array([[1, 2], [4, 3]])
+print(cosine_similarity(a, top_n=1))
+print()

@@ -1,5 +1,6 @@
 from numba import jit
 import numpy as np
+from math import sqrt
 
 
 @jit(nopython=True)
@@ -11,14 +12,23 @@ def matrix_multiply(X, Y):
     Output:
       - out: A numpy array of shape (N, K)
     """
-    out = np.zeros((X.shape[0], Y.shape[1]), dtype=np.float64)
+    if X.shape[1] != Y.shape[0]:
+        print("Error: size mismatch")
+        return None
 
-    for i in range(X.shape[0]):
-        for j in range(Y.shape[1]):
-            val = 0
+    N = X.shape[0]
+    M = Y.shape[0]
+    K = Y.shape[1]
 
-            for k in range(Y.shape[0]):
+    out = np.zeros((N, K), dtype=np.float32)
+
+    for i in range(N):
+        for j in range(K):
+            val = .0
+
+            for k in range(M):
                 val += X[i, k] * Y[k, j]
+
             out[i, j] = val
 
     return out
@@ -36,48 +46,44 @@ def matrix_rowmean(X, weights=np.empty(0)):
     Output:
       - out: A numpy array of shape (N,)
     """
-    out = np.zeros((X.shape[0]), dtype=np.float64)
+    M = X.shape[0]
+    N = X.shape[1]
 
-    for i in range(X.shape[0]):
-        val = 0
+    out = np.zeros(M, dtype=np.float32)
 
-        for j in range(X.shape[1]):
+    for i in range(M):
+        val = .0
+
+        for j in range(N):
             if weights is None:
                 val += X[i, j]
             else:
                 val += X[i, j] * weights[j]
 
-        out[i] = val / X.shape[1]
+        out[i] = val / N
 
     return out
 
 
 @jit(nopython=True)
-def arr_mean(X):
-    out = 0.0
-
-    for i in range(X.size):
-        out += X[i]
-
-    out /= X.size
+def array_mean(X):
+    out = X.sum() / len(X)
 
     return out
 
 
 @jit(nopython=True)
-def arr_std(X):
-    mean = arr_mean(X)
+def array_std(X):
+    mean = array_mean(X)
 
-    out = np.zeros(X.shape)
+    out = np.zeros(len(X), dtype=np.float32)
 
-    for i in range(X.size):
-        out[i] = X[i]
+    for i in range(len(X)):
+        out[i] = (X[i] - mean) ** 2
 
-    for i in range(X.size):
-        out[i] -= mean
-        out[i] = abs(out[i]) ** 2
+    out = sqrt(array_mean(out))
 
-    return arr_mean(out) ** 0.5
+    return out
 
 
 @jit(nopython=True)
@@ -105,57 +111,56 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
         X = array([[ 1.,  0.], [ 0.,  1.]])
 
     """
-    out = np.zeros(X.shape, dtype=np.float64)
+    M = X.shape[0]
+    N = X.shape[1]
 
-    for i in range(X.shape[0]):
-        for j in range(X.shape[1]):
-            out[i, j] = X[i, j]
+    x_row = np.zeros(N)
+    x_col = np.zeros(M)
 
-    x = np.zeros(X.shape[1])
+    x_tmp = np.zeros(X.shape, dtype=np.float32)
+
+    for i in range(M):
+        for j in range(N):
+            x_tmp[i, j] = X[i, j]
 
     if with_mean:
-        for i in range(X.shape[0]):
-            for j in range(X.shape[1]):
-                x[j] = out[i, j]
-            for j in range(X.shape[1]):
-                out[i, j] -= arr_mean(x)
+        for i in range(M):
+            for j in range(N):
+                x_row[j] = x_tmp[i, j]
+
+            for j in range(N):
+                x_tmp[i, j] -= array_mean(x_row)
 
     if with_std:
-        for i in range(X.shape[0]):
-            for j in range(X.shape[1]):
-                x[j] = out[i, j]
-            for j in range(X.shape[1]):
-                out[i, j] /= arr_std(x)
+        for i in range(M):
+            for j in range(N):
+                x_row[j] = x_tmp[i, j]
 
-    if top_n < 0:
-        top_n = 0
-    elif top_n > X.shape[1]:
-        top_n = X.shape[1]
+            for j in range(N):
+                x_tmp[i, j] /= array_std(x_row)
 
-    for j in range(X.shape[0]):
-        for q in range(X.shape[1]):
-            x[q] = out[j, q]
+    for j in range(M):
+        for p in range(N):
+            x_row[p] = x_tmp[j, p]
 
-        args = np.argsort(x)
+        args = np.argsort(x_row)
 
-        for i in range(X.shape[1] - top_n):
-            out[j, args[i]] = 0
+        for i in range(N - top_n):
+            x_tmp[j, args[i]] = .0
 
-    v = np.zeros(X.shape[0])
+    for i in range(M):
+        for j in range(N):
+            x_col[i] += x_tmp[i, j] ** 2
 
-    for i in range(X.shape[0]):
-        for j in range(X.shape[1]):
-            v[i] += out[i, j] ** 2
+        x_col[i] = sqrt(x_col[i])
 
-        v[i] = v[i] ** 0.5
+    out = np.zeros((M, M), dtype=np.float32)
 
-    OUT = np.zeros((X.shape[0], X.shape[0]), dtype=np.float64)
+    for i in range(M):
+        for j in range(M):
+            for l in range(N):
+                out[i, j] += x_tmp[i, l] * x_tmp[j, l]
 
-    for i in range(X.shape[0]):
-        for j in range(X.shape[0]):
-            for l in range(X.shape[1]):
-                OUT[i, j] += out[i, l] * out[j, l]
+            out[i, j] /= x_col[i] * x_col[j]
 
-            OUT[i, j] /= v[i] * v[j]
-
-    return OUT
+    return out
