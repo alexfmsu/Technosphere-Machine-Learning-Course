@@ -48,7 +48,6 @@ def matrix_rowmean(X, weights=np.empty(0)):
     """
     M = X.shape[0]
     N = X.shape[1]
-<<<<<<< HEAD
 
     out = np.zeros(M, dtype=np.float32)
 
@@ -64,11 +63,6 @@ def matrix_rowmean(X, weights=np.empty(0)):
     for i in range(N):
         w += weights_tmp[i]
 
-=======
-
-    out = np.zeros(M, dtype=np.float32)
-
->>>>>>> 46868bff9abd1639b1908cbebb1b52018435d669
     for i in range(M):
         val = .0
 
@@ -78,11 +72,7 @@ def matrix_rowmean(X, weights=np.empty(0)):
             else:
                 val += X[i, j] * weights_tmp[j]
 
-<<<<<<< HEAD
         out[i] = val / w
-=======
-        out[i] = val / N
->>>>>>> 46868bff9abd1639b1908cbebb1b52018435d669
 
     return out
 
@@ -122,7 +112,6 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
       - with_std: bool, in case of subtracting each row's std
     Output:
       - out: A numpy array of shape (N, N)
-
     Example (with top_n=1, with_mean=True, with_std=True):
         X = array([[1, 2], [4, 3]])
         after mean and std transform:
@@ -131,11 +120,9 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
         X = array([[0.,  1.], [ 1., 0]])
         cosine similarity:
         X = array([[ 1.,  0.], [ 0.,  1.]])
-
     """
     M = X.shape[0]
     N = X.shape[1]
-<<<<<<< HEAD
 
     x_tmp = np.zeros(X.shape, dtype=np.float32)
 
@@ -183,55 +170,6 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
         for j in range(M):
             for k in range(N):
                 out[i, k] += x_tmp[i, k] * x_tmp[j, k]
-=======
-
-    x_row = np.zeros(N)
-    x_col = np.zeros(M)
-
-    x_tmp = np.zeros(X.shape, dtype=np.float32)
-
-    for i in range(M):
-        for j in range(N):
-            x_tmp[i, j] = X[i, j]
-
-    if with_mean:
-        for i in range(M):
-            for j in range(N):
-                x_row[j] = x_tmp[i, j]
-
-            for j in range(N):
-                x_tmp[i, j] -= array_mean(x_row)
-
-    if with_std:
-        for i in range(M):
-            for j in range(N):
-                x_row[j] = x_tmp[i, j]
-
-            for j in range(N):
-                x_tmp[i, j] /= array_std(x_row)
-
-    for j in range(M):
-        for p in range(N):
-            x_row[p] = x_tmp[j, p]
-
-        args = np.argsort(x_row)
-
-        for i in range(N - top_n):
-            x_tmp[j, args[i]] = .0
-
-    for i in range(M):
-        for j in range(N):
-            x_col[i] += x_tmp[i, j] ** 2
-
-        x_col[i] = sqrt(x_col[i])
-
-    out = np.zeros((M, M), dtype=np.float32)
-
-    for i in range(M):
-        for j in range(M):
-            for l in range(N):
-                out[i, j] += x_tmp[i, l] * x_tmp[j, l]
->>>>>>> 46868bff9abd1639b1908cbebb1b52018435d669
 
             out[i, j] /= x_col[i] * x_col[j]
 
