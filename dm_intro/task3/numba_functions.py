@@ -51,6 +51,18 @@ def matrix_rowmean(X, weights=np.empty(0)):
 
     out = np.zeros(M, dtype=np.float32)
 
+    weights_tmp = np.zeros(N, dtype=np.float32)
+
+    if weights.shape == (0,):
+        weights_tmp = np.ones(N, dtype=np.float32)
+    else:
+        for i in range(len(weights)):
+            weights_tmp[i] = weights[i]
+    w = .0
+
+    for i in range(N):
+        w += weights_tmp[i]
+
     for i in range(M):
         val = .0
 
@@ -58,9 +70,9 @@ def matrix_rowmean(X, weights=np.empty(0)):
             if weights is None:
                 val += X[i, j]
             else:
-                val += X[i, j] * weights[j]
+                val += X[i, j] * weights_tmp[j]
 
-        out[i] = val / N
+        out[i] = val / w
 
     return out
 
@@ -114,10 +126,12 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
     M = X.shape[0]
     N = X.shape[1]
 
+    x_tmp = np.zeros(X.shape, dtype=np.float32)
+
     x_row = np.zeros(N)
     x_col = np.zeros(M)
 
-    x_tmp = np.zeros(X.shape, dtype=np.float32)
+    out = np.zeros((M, M), dtype=np.float32)
 
     for i in range(M):
         for j in range(N):
@@ -154,12 +168,10 @@ def cosine_similarity(X, top_n=10, with_mean=True, with_std=True):
 
         x_col[i] = sqrt(x_col[i])
 
-    out = np.zeros((M, M), dtype=np.float32)
-
     for i in range(M):
         for j in range(M):
-            for l in range(N):
-                out[i, j] += x_tmp[i, l] * x_tmp[j, l]
+            for k in range(N):
+                out[i, k] += x_tmp[i, k] * x_tmp[j, k]
 
             out[i, j] /= x_col[i] * x_col[j]
 

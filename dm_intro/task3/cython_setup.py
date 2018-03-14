@@ -1,5 +1,6 @@
 import numpy
 from setuptools import setup, Extension
+# from Cython.Distutils import build_ext
 
 ext_modules = [Extension("cython_functions",
                          ["cython_functions.pyx"])
